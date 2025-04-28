@@ -1,7 +1,7 @@
 import argparse
 import boto3
 from botocore.exceptions import ClientError
-from lwise_psych_modules import *
+from stretch_squeeze_psych_modules import *
 
 def confirm_teardown(experiment_name, experiment_number):
     print("\nWARNING: This action will permanently delete all resources associated with the experiment.")

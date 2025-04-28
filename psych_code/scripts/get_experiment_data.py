@@ -9,7 +9,7 @@ import xarray as xr
 from botocore.exceptions import ClientError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import unquote, urlparse
-from lwise_psych_modules.process_session_data import process_session_data, get_bonus_amount_from_message
+from stretch_squeeze_psych_modules.process_session_data import process_session_data, get_bonus_amount_from_message
 
 def fetch_experiment_data(dynamodb_client, table_name):
     """Fetch all data entries from the DynamoDB table."""

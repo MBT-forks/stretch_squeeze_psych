@@ -5,7 +5,7 @@ import shutil
 import numpy as np
 import time
 
-from lwise_psych_modules import *
+from stretch_squeeze_psych_modules import *
 
 
 # Function to generate balanced and shuffled blocks
@@ -83,12 +83,35 @@ def main():
   deploy_dir = os.path.join("deployed_experiments", exp_id)
   if not os.path.exists(deploy_dir):
     os.makedirs(deploy_dir)
+
+  sys.stdout = DualOutput(os.path.join("deployed_experiments", exp_id, "deployment.log"))
+
+  # Copy files into deployment dir
   if not args.aws_config_only:
     shutil.copy(os.path.join("experiment_files", exp_id, exp_file), deploy_dir)
     shutil.copy(os.path.join("experiment_files", exp_id, args.config_file_name), deploy_dir)
     shutil.copy(os.path.join("experiment_files", exp_id, data_spec_file), deploy_dir)
-
-  sys.stdout = DualOutput(os.path.join("deployed_experiments", exp_id, "deployment.log"))
+    
+    # Create destination js directory
+    js_dest_dir = os.path.join(deploy_dir, "js")
+    if not os.path.exists(js_dest_dir):
+      os.makedirs(js_dest_dir)
+    
+    # First, copy shared JS files if they exist
+    js_shared_dir = os.path.join("experiment_files", "js_shared")
+    if os.path.exists(js_shared_dir):
+      for js_file in os.listdir(js_shared_dir):
+        if js_file.endswith('.js'):
+          shutil.copy(os.path.join(js_shared_dir, js_file), js_dest_dir)
+      print(f"Copied shared JS files from {js_shared_dir} to {js_dest_dir}")
+    
+    # Then copy experiment-specific JS files, overriding shared ones if needed
+    js_exp_dir = os.path.join("experiment_files", exp_id, "js")
+    if os.path.exists(js_exp_dir):
+      for js_file in os.listdir(js_exp_dir):
+        if js_file.endswith('.js'):
+          shutil.copy(os.path.join(js_exp_dir, js_file), js_dest_dir)
+      print(f"Copied experiment-specific JS files from {js_exp_dir} to {js_dest_dir}")
 
   if not args.local_only:
     # Create S3 bucket for this experiment and upload experiment files
@@ -105,6 +128,17 @@ def main():
       upload_s3_file(bucket_name, os.path.join(deploy_dir, exp_file), acl="public-read")
       upload_s3_file(bucket_name, os.path.join(deploy_dir, args.config_file_name))
       upload_s3_file(bucket_name, os.path.join(deploy_dir, data_spec_file), acl="public-read")
+
+      # Upload all JS files from deployment directory
+      js_dir = os.path.join(deploy_dir, "js")
+      if os.path.exists(js_dir):
+        js_files_count = 0
+        for js_file in os.listdir(js_dir):
+          if js_file.endswith('.js'):
+            upload_s3_file(bucket_name, os.path.join(js_dir, js_file), 
+                          object_name=js_file, loc_in_bucket="js", acl="public-read")
+            js_files_count += 1
+        print(f"Uploaded {js_files_count} JS files to s3://{bucket_name}/js/")
 
   if not args.aws_config_only:
     # Generate and upload trialsets (js files that each define a sequence of stimuli for one participant session)

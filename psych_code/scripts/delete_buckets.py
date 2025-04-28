@@ -1,4 +1,4 @@
-from lwise_psych_modules import *
+from stretch_squeeze_psych_modules import *
 import argparse
             
 def main(bucket_names):

@@ -27,8 +27,9 @@ psych_code/deployed_experiments/
 psych_code/deploy_logs/
 psych_code/images/
 psych_code/psych_data/
-psych_code/lwise_psych_modules.egg-info
+psych_code/stretch_squeeze_psych_modules.egg-info
 
+data/
 psych_data/
 
 notebooks/fig_outputs/

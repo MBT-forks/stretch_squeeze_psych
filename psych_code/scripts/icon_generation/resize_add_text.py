@@ -37,21 +37,21 @@ def resize_and_process_image(file_path, font_path):
         image_size = (256, 256)
 
         # Resize and place original image in a circle
-        object_name = re.search(r'(\w+)_icon\.png$', file_path).group(1)
+        object_name = re.search(r'(\w+)\.png$', file_path).group(1)
         if object_name in ["fish", "insect", "shark", "turtle", "crab", "dog", "circle", "triangle", "lizard", "monkey"]:
             scale_factor = 0.9
-        elif object_name in ["rodent", "snake", "frog"]:
+        elif object_name in ["rodent", "snake", "frog", "minibus", "chickadee", "camera", "candle", "piano"]:
             scale_factor = 0.8
-        elif object_name in ["house_cat"]:
+        elif object_name in ["house_cat", "soccer_ball", "bull_terrier", "camera", "goldfish", "frill_lizard"]:
             scale_factor = 0.6
         elif object_name in ["fruit", "fungus", "vegetable"]:
             scale_factor = 0.65
         else:
             scale_factor = 0.7
 
-        if object_name in ["vegetable"]:
+        if object_name in ["vegetable", "soccer_ball", "frill_lizard", "candle"]:
             image_offset = -40
-        elif object_name in ["house_cat", "fungus", "antelope", "rodent"]:
+        elif object_name in ["house_cat", "fungus", "antelope", "rodent", "minibus", "candle", "goldfish", "bull_terrier", "chickadee"]:
             image_offset = -30
         else:
             image_offset = -20
@@ -59,9 +59,15 @@ def resize_and_process_image(file_path, font_path):
         final_img = resize_and_place_in_circle(img, circle_radius, circle_position, image_size, scale_factor, image_offset)
 
         # Add text
-        if object_name in ["house_cat", "vegetable"]:
+        # if object_name in ["chickadee"]:
+        #     text_offset = -60
+        if object_name in ["frill_lizard",  "chickadee"]:
+            text_offset = -60
+        elif object_name in ["camera"]:
+            text_offset = -55
+        elif object_name in ["house_cat", "vegetable", "goldfish", "minibus"]:
             text_offset = -45
-        elif object_name in ["antelope"]:
+        elif object_name in ["antelope", "cicada", "candle"]:
             text_offset = -35
         else:
             text_offset = -30
@@ -69,8 +75,20 @@ def resize_and_process_image(file_path, font_path):
         draw = ImageDraw.Draw(final_img)
         font = ImageFont.truetype(font_path, 36)
         object_name = object_name.replace("_", " ")
-        text_width, text_height = draw.textsize(object_name, font=font)
-        draw.text(((image_size[0] - text_width) / 2, image_size[1] - text_height + text_offset), object_name, font=font, fill="black")
+
+        if object_name == "soccer ball":
+            object_name = "soccer\nball"
+        elif object_name == "bull terrier":
+            object_name = "bull\nterrier"
+
+        try: 
+            text_width, text_height = draw.textsize(object_name, font=font)
+        except:
+            x1, y1, x2, y2 = draw.textbbox((0, 0), object_name, font=font)
+            text_width = x2 - x1
+            text_height = y2 - y1
+        
+        draw.text(((image_size[0] - text_width) / 2, image_size[1] - text_height + text_offset), object_name, font=font, fill="black", align='center')
 
         return final_img
 
@@ -79,12 +97,17 @@ def process_images(directory, font_path):
     os.makedirs('edited_icons', exist_ok=True)
 
     for filename in os.listdir(directory):
-        if filename.endswith('.png') and 'icon' in filename:
+        if filename.endswith('.png'):
+            
             file_path = os.path.join(directory, filename)
             final_img = resize_and_process_image(file_path, font_path)
+
+            if "_icon" not in filename: 
+                filename = filename.split(".")[0] + "_icon.png"
+
             new_file_path = os.path.join('edited_icons', filename)
             final_img.save(new_file_path, 'PNG')
 
 # Run the function for the current directory
 font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-process_images('.', font_path)
+process_images('raw_images', font_path)

@@ -1,6 +1,6 @@
-# L-WISE: Boosting Human Visual Category Learning Through Model-Based Image Selection and Enhancement (ICLR 2025)
+# Stretch and Squeeze Psychophysics README
 
-[Link to project website](https://morganbdt.github.io/L-WISE/) | [Link to preprint on arXiv](https://arxiv.org/pdf/2412.09765)
+[Link to project website (TO CHANGE)](https://morganbdt.github.io/L-WISE/) | [Link to preprint on arXiv (TO CHANGE)](https://arxiv.org/pdf/2412.09765)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -43,9 +43,9 @@
 
 ## Codebase Overview and Setup
 
-The codebase for this project is divided into two main parts. The **imgproc_code** directory contains code for enhancing images, predicting image difficulty, training models, and various other image processing tasks. The **psych_code** directory contains customizable code for running psychophysics experiments. 
+The **psych_code** directory contains customizable code for running psychophysics experiments in the Stretch and Squeeze project. 
 
-The following shell commands can be used to set up a suitable Python virtual environment (please run from the root project directory, i.e. "L-WISE"):
+The following shell commands can be used to set up a suitable Python virtual environment (please run from the root project directory, i.e. "stretch_squeeze_psych"):
 
 ```
 sudo apt update
@@ -55,114 +55,11 @@ sudo apt update
 sudo apt install python3.12 python3.12-venv python3.12-dev
 
 mkdir -p venvs
-python3.12 -m venv ./venvs/lwise_env
-source venvs/lwise_env/bin/activate
+python3.12 -m venv ./venvs/stretch_squeeze_env
+source venvs/stretch_squeeze_env/bin/activate
 pip install -r requirements.txt
-pip install -e imgproc_code/robustness
-pip install -e imgproc_code/lwise_imgproc_utils
 pip install -e psych_code
 ```
-
-# Enhancing images, predicting image difficulty, and training robust models (see "imgproc_code" directory)
-
-## Obtaining pretrained model checkpoints
-
-Run the following commands from the root project directory to download and extract the ResNet-50 model checkpoints: 
-```
-mkdir -p imgproc_code/model_ckpts
-wget https://github.com/MorganBDT/L-WISE/releases/download/v1.0.0/L-Wise_ckpts.zip
-unzip L-Wise_ckpts.zip -d imgproc_code/model_ckpts
-rm L-Wise_ckpts.zip
-```
-
-We provide adversarially-trained/robustified models for all of the datasets we worked with, along with "vanilla" (non-robust) versions otherwise trained with the same hyperparameters. The name of each .pt model file indicates the dataset it was trained or fine-tuned on, as well as the training ϵ for the robust models (e.g., ϵ=1 or ϵ=3).
-
-For some of the supplementary experiments in the L-WISE paper, we also used pretrained checkpoints from [Debenedetti et al.](https://github.com/dedeswim/vits-robustness-torch) (XCiT-L12 adversarially pretrained on ImageNet with ϵ=4), [Yun et al.](https://github.com/clovaai/CutMix-PyTorch) (ResNet-50 pretrained on ImageNet with CutMix), and [Gaziv et al.](https://github.com/ggaziv/Wormholes) (ResNet-50 models adversarially pretrained on ImageNet with several different ϵ values).
-
-## How to enhance images using robust networks
-
-### Method 1: python script to enhance a dataset
-
-The script imgproc_code/scripts/enhance.py is designed to "enhance" an entire dataset of images indexed using a "dirmap" csv file (see [Dataset organization section](#dataset-organization-and-how-to-add-new-datasets-to-this-project)) using a robust model. A GPU is required for execution. Please see the arguments in the script for details. You must provide, at minimum:
-* --dest_dir &emsp; (path to a location where the the enhanced version of the dataset will be saved)
-* --dirmap_path &emsp; (path to a csv file, with one row for each image to be enhanced - see [Dataset organization section](#dataset-organization-and-how-to-add-new-datasets-to-this-project) for formatting)
-* --dataset_name &emsp; (name of the dataset class in imgproc_code/robustness/robustness/datasets.py)
-* --model_ckpt_path &emsp; (path to the trained model that will be used to enhance the images)
-* --arch &emsp; (name of CNN architecture. As of now, 'resnet50' works reliably and all other options are experimental.)
-
-Other optional arguments can be used to set a specific L2 pixel budget for the perturbations (--eps), which loss function should be used (--objective_type), and many other aspects of the enhancement process - see script arguments for details. If you run out of GPU memory, try reducing the --batch_size. Here is an example terminal command to enhance some imagenet images using a pretrained model (run from the imgproc_code directory):
-```
-python scripts/enhance.py --eps 20 --num_steps 40 --dest_dir data/enhanced_imagenet_images --dirmap_path path/to/dirmap.csv --dataset_name ImageNet --dataset_path path/to/ImageNet --model_ckpt_path model_ckpts/ImageNet_eps3.pt --objective_type logit
-```
-
-Our enhancement approach essentially involves maximizing the logit value of the ground truth class. You can also minimize the cross-entropy loss by setting --objective_type cross_entropy. For the fine-grained datasets we used in the learning experiments, we used "--objective_type logit_diverge", such that the logits of competing classes are explicitly minimized - this seems to produce more compelling perturbations in fine-grained tasks. For example, to enhance HAM10000 dermoscopy images:
-```
-python scripts/enhance.py --eps 8 --num_steps 16 --dest_dir data/enhanced_dermoscopy_images --dirmap_path path/to/dirmap.csv --dataset_name HAM10000 --dataset_path path/to/HAM10000 --model_ckpt_path model_ckpts/HAM10000_eps1.pt --objective_type logit_diverge
-```
-
-The additional script imgproc_code/scripts/enhance_vit_aug.py is similar to enhance.py, but it is designed specifically to use a vision transformer model called [XCiT](https://papers.neurips.cc/paper/2021/file/a655fbe4b8d7439994aa37ddad80de56-Paper.pdf) and implements an array of multi-view augmentations to generate gradient steps for higher-quality perturbations (which seems to be necessary specifically for transformer-based models.) Here is an example terminal command to run this script on some ImageNet animal images (if you run out of GPU memory, try reducing the batch size): 
-```
-python scripts/enhance_vit_aug.py --dest_dir data/imagenet16_xcit_tuned --eps 20 --step_size 0.5 --num_steps 80 --num_augs 10 --batch_size 8 --dirmap_path data/imagenet16/dirmap.csv --objective_type logit --save_originals --dataset_name ImageNet --dataset_path data/imagenet16 --arch xcit_large_12_p16_224 --model_ckpt_path model_ckpts/debenedetti/xcit-l12-ImageNet-eps-4.pth.tar
-```
-
-### Method 2: bash scripts for enhancing datasets and uploading to S3 with multiple perturbation sizes
-
-We provide several bash scripts that automate the process of enhancing entire datasets with multiple different perturbation sizes (pixel budget values ϵ), and uploading the resulting copies of the dataset to S3 to be used in psychophysics experiments. They are found in the imgproc_code/scripts/batch_enhance directory. Some modification of the dataset/csv/model checkpoint paths will be required to get these scripts working on your system. 
-
-## How to predict difficulty of images using robust networks
-
-We introduce a simple difficulty prediction metric: the logit value associated with the groundtruth class from a robust ANN. This can be calculated for images from many datasets using imgproc_code/scripts/test_model_on_dirmap_get_gt_logit.py (which also serves as a way to evaluate a trained network on a dataset). 
-
-Example terminal commands (to be run from inside imgproc_code, after obtaining/setting up these datasets and downloading model checkpoints): 
-
-```
-# Get logits for ImageNet Animals (16 classes):
-python scripts/test_model_on_dirmap_get_gt_logit.py --dirmap_path path/to/dataset_dirmap.csv --dataset_name ImageNet --model_ckpt_path model_ckpts/ImageNet_eps3.pt --class_num_col orig_class_num
-
-# Get logits for "Idaea4" moth photos (4 classes), and also generate a class confusion matrix:
-python scripts/test_model_on_dirmap_get_gt_logit.py --dirmap_path data/idaea4/idaea4_natural/dirmap.csv --dataset_name idaea4 --dataset_path path/to/idaea4_natural --model_ckpt_path model_ckpts/idaea4_eps1.pt --confusion_matrix
-```
-Note that "--class_num_col orig_class_num" is specified for ImageNet so that we evaluate the ground truth logits on the original 1000 classes, not the superclasses (i.e., how confident is the model that a specific image is "Siberian Husky" rather than "dog" in general).
-
-In order to use robust_gt_logit for psychophysics experiments in this codebase, it must first be explicitly converted to a difficulty measure (a new column in the dirmap called "difficulty") that should have higher values for more difficult images, unlike robust_gt_logit which is higher for easier images. You can add the difficulty column (using a simple normalization calculation, see script for details) with the command: 
-
-```
-python scripts/calc_difficulty_from_logit.py path/to/your/dataset_dirmap.csv
-```
-
-
-## How to train/fine-tune robust models
-
-This project builds directly on top of the [Robustness library](https://github.com/MadryLab/robustness) by the Madry Lab - if you wish to experiment with adversarially trained models more broadly, you may be better off using that library directly. Our code provides additional functionality for adversarial fine-tuning of pretrained models.
-
-You can fine-tune an existing model using adversarial training via the script **imgproc_code/scripts/robust_transfer_learning.py**. Please review the arguments list of this script to understand how to use it. Note that, before training/fine-tuning a model on a new, outside dataset, you must format the dataset in a specific way (see [Dataset organization](#dataset-organization-and-how-to-add-new-datasets-to-this-project)).
-
-For example, here is how to adversarially-fine-tune an adversarially-ImageNet-pretrained model on the MHIST histology dataset (with an adversarial ϵ=1 during fine-tuning):
-```
-python scripts/robust_transfer_learning.py --dataset_name MHIST --dataset_path path/to/imagefolder/formatted/mhist --n_epochs 50 --lr 0.001 --custom_lr_multiplier "" --batch_size 16 --eps 1 --saved_model_ckpt_path model_ckpts/ImageNet_eps3.pt
-```
-
-You can also adversarially train models from scratch using this same script. For example, here is how to replicate our adversarially training run of a ResNet50 model on the iNaturalist dataset from scratch (run from inside imgproc_code directory):
-```
-# In one shot (may take a few weeks)
-python scripts/robust_transfer_learning.py --eps 1 --attack_steps 7 --attack_lr 0.3 --n_epochs 200 --lr 0.1 --step_lr 50 --step_lr_gamma 0.1 --gpu_ids 0 --custom_lr_multiplier "" --batch_size 256 --val_batch_size 128 --n_workers 16 --dataset_name inat --dataset_path path/to/inat2021
-
-# ALTERNATIVELY, in two subsequent jobs (For the second job, change "85ad31ec-6919-52878a26a9f8" to the output directory of the first job)
-python scripts/robust_transfer_learning.py --eps 1 --attack_steps 7 --attack_lr 0.3 --n_epochs 100 --lr 0.1 --step_lr 50 --step_lr_gamma 0.1 --gpu_ids 0 --custom_lr_multiplier "" --batch_size 256 --val_batch_size 128 --n_workers 16 --dataset_name inat --dataset_path path/to/inat2021
-
-python scripts/robust_transfer_learning.py --eps 1 --attack_steps 7 --attack_lr 0.3 --n_epochs 100 --lr 0.001 --step_lr 50 --step_lr_gamma 0.1 --gpu_ids 0 --custom_lr_multiplier "" --batch_size 256 --val_batch_size 128 --n_workers 16 --dataset_name inat --dataset_path path/to/inat2021 --continue_same_dataset --saved_model_ckpt_path train_output/85ad31ec-6919-52878a26a9f8/checkpoint.pt.latest
-```
-In this example, we train with an adversarial ϵ=1 (7 attack steps with step size 0.3), for 200 epochs, with a starting learning rate (--lr) of 0.1. We multiply the learning rate by a factor of 0.1 (--step_lr_gamma) every 50 epochs (--step_lr). 
-
-
-## Dataset organization, and how to add new datasets to this project
-
-In order to add new image classification datasets to this project, there are three requirements: 
-1. Datasets must be indexed using "dirmap" csv files (see below)
-2. Datasets must be arranged in "[ImageFolder](https://pytorch.org/vision/main/generated/torchvision.datasets.ImageFolder.html) format" (root dataset folder contains split folders like "train", "val", "test", within each of these is one folder per class, containing all images of that class within that split)
-3. In most cases, a new class for each dataset must be added to imgproc_code/robustness/robustness/datasets.py 
-
-If you only want to run psychophysics experiments without using the code in imgproc_code, requirements 2 and 3 do not matter. 
 
 ### "Dirmap" indexing for datasets
 
@@ -181,27 +78,13 @@ Optional columns, depending on the dirmap's origin and what it is being used for
 * difficulty &emsp; (A difficulty score, which in our case would be a normalized version of robust_gt_logit)
 * Additional dataset-specific columns (e.g., the MHIST dataset's dirmap has a column "Number of Annotators who Selected SSA (Out of 7)" indicating expert agreement on the image labels).
 
-Dirmap files are initially produced using scripts placed in imgproc_code/dataset_setup, such as define_imagenet_subset_dataset.py (for ImageNet Animals, use 'i16' option), define_ham10000_dataset.py (for HAM10000 dermoscopy dataset), etc. Some of the scripts will work for multiple datasets - for example, imgproc_code/dataset_setup/imagefolder_style_df.py will produce a valid dirmap for any dataset that is already in "[ImageFolder](https://pytorch.org/vision/main/generated/torchvision.datasets.ImageFolder.html) format."
-
-In order to train/evaluate models on image datasets within the [Robustness library](https://github.com/MadryLab/robustness) (which this repository builds upon, and contains a modified version of), datasets must be organized in "[ImageFolder](https://pytorch.org/vision/main/generated/torchvision.datasets.ImageFolder.html) format" (root dataset folder contains split folders like "train", "val", "test", within each of which is one folder per class, each containing all images of that class within that split). The script **imgproc_code/dataset_setup/build_dataset.py** is designed to create ImageFolder-formatted copies of datasets that do not start out with this format, using an initial "recipe" dirmap csv produced by other scripts in imgproc_code/dataset_setup. It must be given the path to the recipe dirmap csv, as well as the path to the dataset root. It also has other features, such as the ability to sample a class-balanced subset of the dataset, resize/reformat images, and select a subset of classes to include - see arguments list in the script for details. 
-
-### Setting up new datasets for model training/evaluation
-
-To train robust models on new, outside datasets, you must define a new class in imgproc_code/robustness/robustness/datasets.py. You can also add hyperparameter defaults in imgproc_code/robustness/robustness/defaults.py, and custom data augmentations in imgproc_code/robustness/robustness/data_augmentation.py. See also the original [Robustness library documentation](https://robustness.readthedocs.io/en/latest/example_usage/training_lib_part_2.html#training-on-custom-datasets).
-
-
-
-
-
-
-
 # Running psychophysics experiments (see "psych_code" directory)
 
 The psych_code directory contains code to replicate our psychophysics experiments.
 The codebase is designed to streamline the process of setting up and running new experiments using Amazon Web Services (AWS).
 In addition to HTML/Javascript code that enables the experiments to run in a web browser, we include scripts for automatically setting up the infrastructure to host these experiments online through the AWS platform, such that participants can then be recruited from Prolific or Mechanical Turk. It is also convenient to use the same setup to run the experiment locally for in-person participants. 
 
-## Quick start: hosting pre-designed experiments from the L-WISE paper on Prolific and AWS
+## Quick start: hosting pre-designed experiments from the L-WISE paper on Prolific and AWS @@@@@@ TO CHANGE
 
 1. Make sure you have [set up your AWS credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) such that you can call AWS from the command line. 
 2. Create and configure an experiment on the Prolific website, and obtain the completion code that participants who complete the experiment should receive. 
@@ -220,7 +103,7 @@ python scripts/get_experiment_data.py --experiment_name idaea4_learn --experimen
 
 **IMPORTANT NOTE**: By default, the experiments are set up to log data after each individual trial. This aims to conserve as much data as possible, but can also make the experiment run slowly (especially if there are lots of trials). To speed up the experiment, consider omitting the "&trialsubmit=(url here)" part of the experiment url - it will then only save all the data at the end of the session (the disadvantage of this is that, if a participant does not make it to the end of the session for any reason, you will lose their data).
 
-### How to deploy experiments to reproduce L-WISE paper results: 
+### How to deploy experiments to reproduce L-WISE paper results @@@@@@TO CHANGE: 
 
 Deploying a different experiment using the steps above requires only varying the arguments passed to deploy_experiment.py. Below are example commands for deploying each of the experiments from the L-WISE paper. Note that --aws_prefix can be set to anything (e.g., your name) - it is just a way of keeping track of which resources are yours on a shared AWS account. However, if you change it from the default "lwise", you must also change the aws_prefix value near the top of the html file for the experiment. 
 
@@ -259,7 +142,7 @@ Prolific is the default platform for this codebase - we only used MTurk to run p
 * mturk_qual.py allows you to manage qualifications: you can create new quals and assign them to mturk workers manually using this script. 
 
 
-## Obtaining and analyzing public data from the original L-WISE experiments
+## Obtaining and analyzing public data from the original L-WISE experiments  @@@@@@@@@@@ TO CHANGE
 
 We provide a publicly-available, de-identified copy of all of the data we collected from human participants for the L-WISE paper. You can run the commands below to download and extract this dataset (make sure your working directory is at the repository root). You can then run notebooks/make_figs.ipynb, which performs all of the data analyses from the paper and generates the associated figures. 
 
@@ -299,7 +182,7 @@ The names often correspond to the dataset being used, or some derivative part of
 For example, ham4_learn refers to the use of 4 classes from the HAM10000 dataset, and idaea4 refers to using 4 classes from the iNaturalist dataset (all of them being moth species in the genus _idaea_).
 The experiment numbers are arbitrary: we used them to track various pilot experiments, iterative versions of experimental code, etc. 
 
-### Descriptions of experiment_files directories:
+### Descriptions of experiment_files directories: @@@@@@@@@@@ TO CHANGE
 
 **imagenet_animals_main_10**: The main ImageNet animal recognition experiment, testing logit-max enhancement at different ϵ pixel budgets, with off-the-shelf enhancement algorithms as controls
 
@@ -321,7 +204,7 @@ The experiment numbers are arbitrary: we used them to track various pilot experi
 
 ## HTML files for experimental code
 
-Each experiment has its own HTML file which contains all of code for running the experimental interface in a browser. These were derived from the HTML files in the [Wormholes](https://github.com/ggaziv/Wormholes/tree/main/psych) project and modified extensively. They are designed to be hosted online (e.g., using AWS S3), and to interact with other AWS services to receive session parameters (e.g., random condition assignments for each participant) and store behavioral data. If you wish to develop your own experiment, we recommend starting with psych_code/experiment_files/example_custom_experiment_0/example_custom_experiment_0.html (this is the most flexible and up-to-date version - it works with mouse responses or f/j keyboard responses, and with either dataset_dirmap.csv or trialsets.csv).
+Each experiment has its own HTML file which contains imports of all of the Javascript code for running the experimental interface in a browser. These were derived from the HTML files in the [L-WISE](https://morganbdt.github.io/L-WISE/) project. They are designed to be hosted online (e.g., using AWS S3), and to interact with other AWS services to receive session parameters (e.g., random condition assignments for each participant) and store behavioral data. If you wish to develop your own experiment, we recommend starting with psych_code/experiment_files/example_custom_experiment_0/example_custom_experiment_0.html (this is the most flexible and up-to-date version - it works with mouse responses or f/j keyboard responses, and with either dataset_dirmap.csv or trialsets.csv).
 
 ## Dataset_dirmap.csv and trialsets.csv
 
@@ -441,11 +324,11 @@ python scripts/deploy_experiment.py --experiment_name example_custom_experiment 
 python scripts/deploy_experiment.py --experiment_name example_custom_experiment --experiment_number 0 --aws_prefix lwise --prespecified_trialsets --data_spec_file imagenet_trialsets.csv --config_file_name imagenet_config.yaml
 ```
 
-## Acknowledgements
+## Acknowledgements   @@@@ TO CHANGE
 
 This work was supported in part by Harvard Medical School under the Dean’s Innovation Award for the Use of Artificial Intelligence, in part by Massachusetts Institute of Technology through the David and Beatrice Yamron Fellowship, in part by the National Institute of General Medical Sciences under Award T32GM144273, in part by the National Institutes of Health under Grant R01EY026025, and in part by the National Science Foundation under Grant CCF-1231216. The content is solely the responsibility of the authors and does not necessarily represent the official views of any of the above organizations. The authors would like to thank Yousif Kashef Al-Ghetaa, Andrei Barbu, Pavlo Bulanchuk, Roy Ganz, Katherine Harvey, Michael J. Lee, Richard N. Mitchell, and Luke Rosedahl for sharing their helpful insights into our work at various times. This codebase borrows extensively from the [Robustness library](https://github.com/MadryLab/robustness) by the Madry Lab, and uses psychophysics code modified from the [Wormholes](https://github.com/ggaziv/Wormholes) project in the DiCarlo Lab. We also include a copy of the [Multiscale Retinex](https://www.ipol.im/pub/art/2014/107/) source code, with minor compatibility modifications. 
 
-## Citation
+## Citation  @@@@ TO CHANGE
 
 If you find this code to be useful, please consider giving it a star ⭐️ and a citation as follows: 
 

@@ -2,7 +2,7 @@ import os
 import boto3
 import argparse
 import sys
-from lwise_psych_modules.process_session_data import *
+from stretch_squeeze_psych_modules.process_session_data import *
 
 
 def get_mturk_assignment(assignment_id, save_path, sandbox=False, verbose=False, save=False):

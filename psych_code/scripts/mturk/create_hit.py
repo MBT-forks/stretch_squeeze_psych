@@ -1,6 +1,6 @@
 import boto3
 import argparse
-from lwise_psych_modules import load_configs
+from stretch_squeeze_psych_modules import load_configs
 import pprint
 
 
