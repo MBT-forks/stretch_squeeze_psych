@@ -59,6 +59,9 @@ def store_trial_data(body, assignment_id):
 
 
 def lambda_handler(event, context):
+    end_experiment = False
+    end_experiment_message = None
+
     try: 
         ### 1. SETUP
 
@@ -107,12 +110,19 @@ def lambda_handler(event, context):
 
             if trialset_id is not None and vals['request_purpose'] == 'initialize_session_metadata':
                 # This indicates that the page has been refreshed or the experiment otherwise restarted with the same session/assignment ID
-                mapping_table.update_item(  # Increment the refresh counter
+                update_response = mapping_table.update_item(  # Increment the refresh counter
                     Key={'assignment_id': assignment_id},
                     UpdateExpression='SET refresh_count = refresh_count + :inc',
                     ExpressionAttributeValues={':inc': 1},
                     ReturnValues="UPDATED_NEW"
                 )
+                current_refresh_count = update_response['Attributes']['refresh_count']
+
+                if "max_num_refreshes" in body and current_refresh_count > body['max_num_refreshes']:
+                    end_experiment = True
+                    end_experiment_message = "You have exceeded the maximum number of page refreshes: the experiment is now concluded. Thank you for your participation."
+                    print(f"Experiment ended due to exceeding maximum refreshes. Current: {current_refresh_count}, Max: {body['max_num_refreshes']}")
+
             elif vals['request_purpose'] == 'initialize_session_metadata':
                 vals['refresh_count'] = 0
         except Exception as e:
@@ -187,6 +197,11 @@ def lambda_handler(event, context):
                 response_body["redirectUrl"] = f"https://app.prolific.co/submissions/complete?cc={COMPLETION_CODE}"
             elif vals['request_purpose'] == 'store_session_data_screen_out':
                 response_body["redirectUrl"] = f"https://app.prolific.co/submissions/complete?cc={SCREEN_OUT_CODE}"
+
+        if end_experiment:
+            response_body['end_experiment'] = True
+            if end_experiment_message is not None:
+                response_body['end_experiment_message'] = end_experiment_message
 
         return {
             'statusCode': 200,

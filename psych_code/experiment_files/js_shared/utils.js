@@ -187,7 +187,7 @@ function _store_jspsych_cookie(trial_data) {
   CookieUtils.setCookie('jspsych-my-virtual-chinrest', JSON.stringify(trial_data), 7,)
 }
 
-function session_metadata_lambda(experiment_name, experiment_number, aws_prefix, api_gateway_url, platform = null, assignment_id = null, datastring = null, bonus_usd = null, trialset_id = null, request_purpose = null, max_retries = 3, initial_delay = 1000) {
+function session_metadata_lambda(experiment_name, experiment_number, aws_prefix, api_gateway_url, platform = null, assignment_id = null, datastring = null, bonus_usd = null, trialset_id = null, request_purpose = null, max_retries = 3, initial_delay = 1000, max_num_refreshes = null) {
   const turkInfo = jsPsych.turk.turkInfo();
 
   function makeRequest(retryCount) {
@@ -258,6 +258,9 @@ function session_metadata_lambda(experiment_name, experiment_number, aws_prefix,
           if (request_purpose !== null) {
               payload.request_purpose = request_purpose
           }
+          if (max_num_refreshes !== null) {
+            payload.max_num_refreshes = max_num_refreshes
+        }
 
           xhr.send(JSON.stringify(payload));
       });
@@ -313,4 +316,22 @@ async function assign_quals_lambda_wrapper(qualification_type_ids, sandbox) {
   console.log("assigning quals")
   qual_lambda_response = await assign_quals_lambda(qualification_type_ids, SANDBOX);
   console.log(qual_lambda_response)
+}
+
+function end_experiment_outside_jspsych(end_experiment_message = null) {
+    let jsPsych = initJsPsych({show_progress_bar: true, auto_update_progress_bar: false, message_progress_bar: 'Progress',});
+    end_exp_node = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '',
+        choices: 'NO_KEYS',
+        trial_duration: 10,
+        on_finish: function() {
+            if (end_experiment_message) {
+                jsPsych.endExperiment(end_experiment_message);
+            } else {
+                jsPsych.endExperiment('The study has concluded. Thank you for your participation.');
+            }
+        },
+    };
+    jsPsych.run([end_exp_node])
 }

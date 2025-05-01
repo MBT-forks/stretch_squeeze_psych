@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="eng">
+
+<head>
+    <title>Task</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <link rel="stylesheet" href="https://s3.amazonaws.com/miljspsych/jspsych_writer/jspsych_overload/jspsych.css?v=1682292823.928237">
+    <link rel="shortcut icon" href="https://s3.amazonaws.com/miljspsych/jspsych_writer/jspsych_overload/favicon.ico?v=1682292823.928726"/>
+</head>
+
+<body style="background-color:#7F7F7F">
+    <script>
+        // ################### DEFINE EXPERIMENT IDENTIFIERS HERE ###################
+        // Important: for automated aws setup, the name of this html file should be {experiment_name}_{experiment_number}.html
+        const experiment_name = "6ani_6nonani_v1";
+        const experiment_number = 1;
+        const aws_prefix = "morgan"; // Prefix for AWS service names on a shared account. Can be empty string "" if you don't want a prefix
+        const DEVELOPER_MODE = false; //@@@@@@@@@@@@ CHANGE THIS @@@@@@@@@@@@@@@@@@@@@@ CHANGE THIS @@@@@@@@@@@@@@@ CHANGE THIS @@@@@@@@@@@@@@@
+        const accuracy_based_screening = true;
+        const min_correct_total_for_auto_qual = 16;
+        const min_correct_per_class_for_auto_qual = 1;
+        let sco = false
+        let condition_idx = null; // Will be set after trials are loaded
+        let user_ip = null; 
+        let user_email = null;
+        const done_qualification_type_id = "3J1BANAN65L5FWD9QSUPU4J5WJ2EZA"; //CHANGE TO PROD
+        const SANDBOX = false; //@@@@@@@@@@@@ CHANGE THIS @@@@@@@@@@@@@@@@@@@@@@ CHANGE THIS @@@@@@@@@@@@@@@ CHANGE THIS @@@@@@@@@@@@@@@
+        const ASSIGN_QUALS_LAMBDA_API_GATEWAY_URL = "https://zdmhgtejk4.execute-api.us-east-1.amazonaws.com/prod/assign_quals";
+        const MIN_WIDTH = 600;
+        const MIN_HEIGHT = 600;
+    </script>
+
+    <script src="https://s3.amazonaws.com/miljspsych/jspsych_writer/jspsych_overload/jspsych.js?v=1682292823.9282172"></script>
+    <script src="https://s3.amazonaws.com/miljspsych/jspsych_writer/external_javascript/jspsych/dist/plugin-instructions.js?v=1682292823.935534"></script>
+    <script src="https://s3.amazonaws.com/miljspsych/jspsych_writer/external_javascript/jspsych/dist/plugin-preload.js?v=1682292823.935555"></script>
+    <script src="https://s3.amazonaws.com/miljspsych/jspsych_writer/external_javascript/jspsych/dist/plugin-html-keyboard-response.js?v=1682292823.935572"></script>
+    <script src="https://s3.amazonaws.com/miljspsych/jspsych_writer/external_javascript/jspsych/dist/plugin-survey-multi-choice.js?v=1682292823.935593"></script>
+    <!-- <script src="https://s3.amazonaws.com/miljspsych/jspsych_writer/external_javascript/jspsych/dist/plugin-browser-check.js?v=1682292823.935612"></script> -->
+    <script src="https://morgan-study-misc.s3.amazonaws.com/custom_mturk_jspsych_plugin_browser_check.js?v=1.001"></script>
+    <script src="https://s3.amazonaws.com/miljspsych/jspsych_writer/external_javascript/jspsych/dist/plugin-html-button-response.js?v=1682292823.935626"></script>
+    <script src="https://s3.amazonaws.com/miljspsych/jspsych_writer/external_javascript/jspsych/dist/plugin-fullscreen.js?v=1682292823.935638"></script>
+    <!-- <script src="https://s3.amazonaws.com/miljspsych/jspsych_writer/jspsych_overload/jspsych-psychophysics.js?v=1682292823.9356532"></script> -->
+    <script src="https://morgan-study-misc.s3.amazonaws.com/jspsych-psychophysics.js?v=1.015"></script>
+    <script src="https://morgan-study-misc.s3.amazonaws.com/jspsych-window-size-check.js?v=1.002"></script>
+    <script src="https://morgan-study-misc.s3.amazonaws.com/jspsych-my-virtual-chinrest.js?v=1.000"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
+
+    <script src="js/utils.js"></script>            <!-- Utility functions -->
+    <script src="js/setup.js"></script>            <!-- Get params from URL, set instructions -->
+    <script src="js/jspsych_nodes.js"></script>    <!-- Misc. JsPsych nodes (e.g., instructions, mturk submission) -->
+    <script src="js/mts_globals.js"></script>      <!-- Defines MTS_TASK_GLOBALS -->
+    <script src="js/mts_trial_nodes.js"></script>  <!-- Defines MTS_Trial_Nodes -->
+    <script src="js/experiment_setup.js"></script> <!-- Defines get_nway_afc_trials -->
+    <script src="js/main.js"></script>             <!-- Defines run_experiment, calls jsPsych.run -->
+
+</body>
+
+</html>

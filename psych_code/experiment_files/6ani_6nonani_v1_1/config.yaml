@@ -1,0 +1,65 @@
+session_config:
+  - screening:
+    n_trials_per_class_robust_resnet50-Stretch_in_conv25 : 0
+    n_trials_per_class_robust_resnet50-Stretch_in_conv51 : 0
+    n_trials_per_class_robust_resnet50-Stretch_in_pixelspace : 0
+    n_trials_per_class_robust_resnet50-mXDREAM_-_l2robust : 0
+    n_trials_per_class_vanilla_resnet50-Stretch_in_conv25 : 0
+    n_trials_per_class_vanilla_resnet50-Stretch_in_conv51 : 0
+    n_trials_per_class_vanilla_resnet50-Stretch_in_pixelspace : 0
+    n_trials_per_class_vanilla_resnet50-mXDREAM_-_vanilla : 0
+    n_trials_per_class_natural : 2
+    n_calibration_trials: 0
+    class_balanced: true
+    choice_duration_msec: 30000
+  - main:
+    show_warmup_complete_instructions: true
+    n_trials_per_class_robust_resnet50-Stretch_in_conv25 : 5
+    n_trials_per_class_robust_resnet50-Stretch_in_conv51 : 5
+    n_trials_per_class_robust_resnet50-Stretch_in_pixelspace : 5
+    n_trials_per_class_robust_resnet50-mXDREAM_-_l2robust : 5
+    n_trials_per_class_vanilla_resnet50-Stretch_in_conv25 : 5
+    n_trials_per_class_vanilla_resnet50-Stretch_in_conv51 : 5
+    n_trials_per_class_vanilla_resnet50-Stretch_in_pixelspace : 5
+    n_trials_per_class_vanilla_resnet50-mXDREAM_-_vanilla : 5
+    n_trials_per_class_natural : 5
+    n_calibration_trials: 0
+    class_balanced: true
+    # warmup_trial_type: "natural"
+
+trial_config:
+  keypress_fj_response: false
+  show_fixation: true
+  show_feedback: true
+  reward_duration_msec: 500
+  incorrect_duration_msec: 500
+  correct_feedback_lockout_duration_msec: 500
+  incorrect_feedback_lockout_duration_msec: 500
+  stimulus_duration_msec: 200
+  calibration_stimulus_duration_msec: 200
+  post_stimulus_delay_duration_msec: 200
+  keep_stimulus_on: false
+  stimulus_width_degrees: 10
+  choice_width_degrees_default: 3
+  choice_duration_msec: 10000
+  pre_choice_lockout_delay_duration_msec: 200
+  intertrial_delay_duration_msec: 200
+  bonus_usd_if_correct: 0.02
+  choice_names_order: ["bull terrier", "chickadee", "frill lizard", "goldfish", "crab", "cicada", "candle", "cup", "camera", "soccer ball", "piano", "minibus"] # Set to null if no specific order
+  choice_url_suffix: "_icon.png"
+  query_string: "Which category is most similar to the image?"
+  feedback_correct_url: "https://miljspsych.s3.amazonaws.com/resources/assets/images/feedback_is_correct_image.png"
+  feedback_incorrect_url: "https://miljspsych.s3.amazonaws.com/resources/assets/images/feedback_is_incorrect_image.png"
+  choice_image_bucket_name: "stretch-squeeze-psych-media"
+  calibration_stimuli: ["circle", "triangle"]
+  shuffle_choice_order: false
+  rotate_choice_order: true
+
+hit_config:
+  title: "Identify objects in photos"
+  description: "View 564 photos and identify the object in each photo"
+  reward: 8.50
+  num_respondents: 9
+  max_time_seconds: 5400  # 1800 = 30 minutes, 3600 = 1 hour
+  lifetime_seconds: 259200  # 259200 = 3 days, 86400 = 1 day
+  frame_height: 0  # The height of the task frame (if zero, resizes automatically)

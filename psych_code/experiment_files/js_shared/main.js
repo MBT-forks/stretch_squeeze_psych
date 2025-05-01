@@ -23,7 +23,17 @@ async function run_experiment(experiment_name, experiment_number, aws_prefix) {
           if (turkInfo.outsideTurk === false && turkInfo.previewMode === false) {
               platform = 'mturk'
           }
-          const response = await session_metadata_lambda(experiment_name, experiment_number, aws_prefix, session_metadata_api_url, platform, null, null, null, trialset_id_from_url, "initialize_session_metadata");
+          const response = await session_metadata_lambda(experiment_name, experiment_number, aws_prefix, session_metadata_api_url, platform, null, null, null, trialset_id_from_url, "initialize_session_metadata", 3, 1000, MTS_TASK_GLOBALS.MAX_NUM_REFRESHES);
+
+          if (response && response.end_experiment) {
+                  if (response.end_experiment_message) {
+                      end_experiment_outside_jspsych(response.end_experiment_message);
+                  } else {
+                      end_experiment_outside_jspsych('The study has concluded. Thank you for your participation.');
+                  }
+                  return;
+          }
+
           trialset_id = response.trialset_id;
           assignment_id_global = response.assignment_id;
       }

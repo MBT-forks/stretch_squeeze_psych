@@ -33,6 +33,8 @@ let MTS_TASK_GLOBALS = new class {
 
       this.CORRECT_TRIALS_COUNT = 0;
       this.CORRECT_CLASS_COUNTS = {};
+
+      this.MAX_NUM_REFRESHES = 2;
   }
 
   _get_size() {
