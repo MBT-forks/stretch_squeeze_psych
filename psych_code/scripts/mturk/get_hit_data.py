@@ -188,7 +188,7 @@ def main(hit_id, save_dir, sandbox=False, approve_all_assignments=False, pay_bon
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Combine MTurk assignment data into a single dataset")
     parser.add_argument('--hit_id', required=True, help="HIT ID to fetch assignments for")
-    parser.add_argument('--save_dir', default='./results', help="Directory to save datasets")
+    parser.add_argument('--save_dir', default='./../psych_data', help="Directory to save datasets")
     parser.add_argument('--no_save', action='store_true', help="Do not save (e.g., if just approving HITs)")
     parser.add_argument('--sandbox', action='store_true', help="Use MTurk sandbox")
     parser.add_argument('--approve_all_assignments', action='store_true', help="Automatically approve ALL assignments")

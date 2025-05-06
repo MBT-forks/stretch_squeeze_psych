@@ -76,10 +76,12 @@ def process_session_data(session_data:list):
         'class',
         'class_l',
         'class_r',
-        'choice_image_urls',
+        'split',
+        # 'choice_image_urls',
+        'choice_names',
         'stimulus_name',
         'choice_name',
-        'query_string',
+        # 'query_string',
         'stimulus_duration_msec',
         'post_stimulus_delay_duration_msec',
         'pre_choice_lockout_delay_duration_msec',
@@ -118,7 +120,7 @@ def process_session_data(session_data:list):
     for k in data_vars:
         data_vars[k] = (['obs'], data_vars[k])
     for k in coords:
-        if k == 'choice_image_urls':
+        if k == 'choice_names':
             max_nchoices = max([len(x) for x in coords[k]])
             # Pad with '' to make all lists the same length
             for i in range(len(coords[k])):

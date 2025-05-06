@@ -236,7 +236,7 @@ if __name__ == "__main__":
     parser.add_argument('--experiment_name', required=True, help="Name of the experiment")
     parser.add_argument('--experiment_number', required=True, type=int, help="Number of the experiment")
     parser.add_argument('--aws_prefix', required=True, help="AWS prefix for the table name")
-    parser.add_argument('--save_dir', default='./results', help="Directory to save the combined dataset")
+    parser.add_argument('--save_dir', default='./../psych_data', help="Directory to save the combined dataset")
     parser.add_argument('--get_partial_trials', action='store_true', help="Fetch partial trial data if full session data is not available")
     parser.add_argument('--get_all_partial_trials', action='store_true', help="Fetch ALL partial trial data")
     parser.add_argument('--check_if_was_screened_out', action='store_true', help="Check if the participant was screened out (only applicable for experiments with in-task screenouts)")
