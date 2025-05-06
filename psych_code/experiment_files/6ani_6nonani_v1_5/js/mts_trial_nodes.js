@@ -65,7 +65,8 @@ class MTS_Trial_Nodes {
         background_color,
         canvas_width_px,
         canvas_height_px,
-        duration_msec
+        duration_msec, 
+        enable_data_saving = false,
     ) {
         let blank_screen = {
             type: jsPsychPsychophysics,
@@ -82,6 +83,13 @@ class MTS_Trial_Nodes {
             remain_canvas: false, // If true, the canvas is not cleared at the end of the trial.
             show_start_time: 0, // from the trial start (ms)
             show_end_time: undefined, // from the trial start (ms)
+            on_finish: function (data) {
+                if (enable_data_saving && DATA_SAVE_INTERVAL && MTS_TASK_GLOBALS.TRIALS_COMPLETED > 0 && MTS_TASK_GLOBALS.TRIALS_COMPLETED % DATA_SAVE_INTERVAL == 0) {
+                    ServerInterfaceUtils.submit_session_data(jsPsych.data.get())
+                }
+
+                jsPsych.getCurrentTrial().end_trial();
+            }
         }
         return blank_screen;
     }
@@ -336,7 +344,7 @@ class MTS_Trial_Nodes {
             clear_canvas: true,
             remain_canvas: false, // If true, the canvas is not cleared at the end of the trial.
             on_finish: function (data) {
-                jsPsych.getCurrentTrial().funcs.dispose();
+                jsPsych.getCurrentTrial().end_trial();
             }
         }
         return feedback_screen
@@ -400,6 +408,37 @@ class MTS_Trial_Nodes {
                 jsPsych.finishTrial(data)
             },
         )
+
+        let resize_handler = function() {
+            // Get the current trial
+            const trial = jsPsych.getCurrentTrial();
+            
+            if (trial && trial.stim_array) {
+                // Find the cross stimulus and circle in the stim_array
+                for (let i = 0; i < trial.stim_array.length; i++) {
+                    const stim = trial.stim_array[i];
+                    
+                    // Update the currentX and currentY properties for all stimuli
+                    // This is the key part - when startX/startY is 'center', this needs to be recalculated
+                    if (stim.startX === 'center') {
+                        stim.currentX = MTS_TASK_GLOBALS.get_canvas_width_pixels() / 2;
+                    }
+                    
+                    if (stim.startY === 'center') {
+                        stim.currentY = MTS_TASK_GLOBALS.get_canvas_height_pixels() / 2;
+                    }
+                    
+                    // For the circle that uses functions instead of 'center'
+                    if (typeof stim.startX === 'function') {
+                        stim.currentX = stim.startX();
+                    }
+                    
+                    if (typeof stim.startY === 'function') {
+                        stim.currentY = stim.startY();
+                    }
+                }
+            }
+        };
   
         // Trial initiation screen
         return {
@@ -424,6 +463,13 @@ class MTS_Trial_Nodes {
             canvas_offsetY: 0,
             clear_canvas: true,
             remain_canvas: false, // If true, the canvas is not cleared at the end of the trial.
+            on_start: function() {
+                window.addEventListener('resize', resize_handler);
+            },
+            on_finish: function (data) {
+                window.removeEventListener('resize', resize_handler);
+                jsPsych.getCurrentTrial().end_trial();
+            }
         }
     }
   
@@ -842,8 +888,8 @@ class MTS_Trial_Nodes {
                 trial_outcome['stimulus_image_url'] = jsPsych.timelineVariable('stimulus_image_url', true)
                 trial_outcome['class'] = jsPsych.timelineVariable('class', true)
                 trial_outcome['choice_names'] = jsPsych.timelineVariable('choice_names', true)
-                trial_outcome['choice_image_urls'] = jsPsych.timelineVariable('choice_image_urls', true)
-                trial_outcome['query_string'] = jsPsych.timelineVariable('query_string', true)
+                // trial_outcome['choice_image_urls'] = jsPsych.timelineVariable('choice_image_urls', true)
+                // trial_outcome['query_string'] = jsPsych.timelineVariable('query_string', true)
                 trial_outcome['stimulus_duration_msec'] = jsPsych.timelineVariable('stimulus_duration_msec', true)
                 trial_outcome['post_stimulus_delay_duration_msec'] = jsPsych.timelineVariable('post_stimulus_delay_duration_msec', true)
                 trial_outcome['pre_choice_lockout_delay_duration_msec'] = jsPsych.timelineVariable('pre_choice_lockout_delay_duration_msec', true)
@@ -886,7 +932,7 @@ class MTS_Trial_Nodes {
                     }
                 }
   
-                jsPsych.getCurrentTrial().funcs.dispose();
+                jsPsych.getCurrentTrial().end_trial();
             }
         }
   
@@ -907,6 +953,7 @@ class MTS_Trial_Nodes {
                 return MTS_TASK_GLOBALS.get_canvas_height_pixels()
             },
             jsPsych.timelineVariable('intertrial_delay_duration_msec'),
+            true,
         )
     }
   }

@@ -14,14 +14,6 @@ __pycache__
 .idea/
 venvs/
 
-imgproc_code/venvs/
-imgproc_code/data/
-imgproc_code/model_ckpts/
-imgproc_code/train_output/
-imgproc_code/o2_results/
-imgproc_code/lw_results/
-imgproc_code/lwise_imgproc_utils/lwise_imgproc_utils.egg-info
-
 psych_code/results/
 psych_code/deployed_experiments/
 psych_code/deploy_logs/
@@ -34,3 +26,5 @@ psych_data/
 
 notebooks/fig_outputs/
 notebooks/heatmap_viz/
+
+repo2file/

@@ -65,7 +65,8 @@ class MTS_Trial_Nodes {
         background_color,
         canvas_width_px,
         canvas_height_px,
-        duration_msec
+        duration_msec, 
+        enable_data_saving = false,
     ) {
         let blank_screen = {
             type: jsPsychPsychophysics,
@@ -82,104 +83,15 @@ class MTS_Trial_Nodes {
             remain_canvas: false, // If true, the canvas is not cleared at the end of the trial.
             show_start_time: 0, // from the trial start (ms)
             show_end_time: undefined, // from the trial start (ms)
-        }
-        return blank_screen;
-    }
-  
-    static calculateOptimalGrid(numImages) {
-        if (numImages <= 1) return { rows: 1, cols: 1 };
-        if (numImages === 2) return { rows: 1, cols: 2 };
-        
-        // For 3 or more images, find a grid as close to square as possible
-        const sqrt = Math.sqrt(numImages);
-        let cols = Math.ceil(sqrt);
-        let rows = Math.ceil(numImages / cols);
-        
-        // Ensure we have enough spots in the grid
-        while (rows * cols < numImages) {
-            cols++;
-        }
-        
-        return { rows, cols };
-    }
-  
-    static createStimulusImageGrid(stimulus_image_url, image_width_px, start_time = 0, end_time = undefined, centerX = 'center', centerY = 'center') {
-        // If stimulus_image_url is a string, convert to array for consistent handling
-        if (!Array.isArray(stimulus_image_url)) {
-            stimulus_image_url = [stimulus_image_url];
-        }
-        
-        // If single image, return a simple object
-        if (stimulus_image_url.length === 1) {
-            return {
-                obj_type: 'image',
-                startX: centerX,
-                startY: centerY,
-                origin_center: true,
-                file: stimulus_image_url[0],
-                image_width: image_width_px,
-                show_start_time: start_time,
-                show_end_time: end_time,
-            };
-        }
-        
-        // For multiple images, calculate grid layout
-        const numImages = stimulus_image_url.length;
-        const grid = MTS_Trial_Nodes.calculateOptimalGrid(numImages);
-        
-        // Calculate individual image size based on grid dimensions and spacing
-        const spacing_percent = 0.02; // 2% spacing
-        const spacing_px = image_width_px * spacing_percent;
-        
-        // Calculate individual image size to fit all images in the grid within the bounding box
-        const individualWidth = (image_width_px - (spacing_px * (grid.cols - 1))) / grid.cols;
-        const individualHeight = (image_width_px - (spacing_px * (grid.rows - 1))) / grid.rows;
-        const individualSize = Math.min(individualWidth, individualHeight);
-        
-        // Calculate the grid's total width and height
-        const totalWidth = (individualSize * grid.cols) + (spacing_px * (grid.cols - 1));
-        const totalHeight = (individualSize * grid.rows) + (spacing_px * (grid.rows - 1));
-        
-        // Create an array of image objects
-        let result = [];
-        let imageIndex = 0;
-        
-        for (let row = 0; row < grid.rows; row++) {
-            for (let col = 0; col < grid.cols; col++) {
-                if (imageIndex < numImages) {
-                    // Calculate position
-                    let xPos, yPos;
-                    
-                    if (centerX === 'center') {
-                        xPos = col * (individualSize + spacing_px) - totalWidth/2 + individualSize/2;
-                    } else {
-                        xPos = centerX + col * (individualSize + spacing_px) - totalWidth/2 + individualSize/2;
-                    }
-                    
-                    if (centerY === 'center') {
-                        yPos = row * (individualSize + spacing_px) - totalHeight/2 + individualSize/2;
-                    } else {
-                        yPos = centerY + row * (individualSize + spacing_px) - totalHeight/2 + individualSize/2;
-                    }
-                    
-                    // Create individual image stimulus
-                    result.push({
-                        obj_type: 'image',
-                        startX: xPos,
-                        startY: yPos,
-                        origin_center: true,
-                        file: stimulus_image_url[imageIndex],
-                        image_width: individualSize,
-                        show_start_time: start_time,
-                        show_end_time: end_time
-                    });
-                    
-                    imageIndex++;
+            on_finish: function (data) {
+                if (enable_data_saving && DATA_SAVE_INTERVAL && MTS_TASK_GLOBALS.TRIALS_COMPLETED > 0 && MTS_TASK_GLOBALS.TRIALS_COMPLETED % DATA_SAVE_INTERVAL == 0) {
+                    ServerInterfaceUtils.submit_session_data(jsPsych.data.get())
                 }
+
+                jsPsych.getCurrentTrial().end_trial();
             }
         }
-        
-        return result;
+        return blank_screen;
     }
   
     static get_feedback_node() {
@@ -336,7 +248,7 @@ class MTS_Trial_Nodes {
             clear_canvas: true,
             remain_canvas: false, // If true, the canvas is not cleared at the end of the trial.
             on_finish: function (data) {
-                jsPsych.getCurrentTrial().funcs.dispose();
+                jsPsych.getCurrentTrial().end_trial();
             }
         }
         return feedback_screen
@@ -400,6 +312,37 @@ class MTS_Trial_Nodes {
                 jsPsych.finishTrial(data)
             },
         )
+
+        let resize_handler = function() {
+            // Get the current trial
+            const trial = jsPsych.getCurrentTrial();
+            
+            if (trial && trial.stim_array) {
+                // Find the cross stimulus and circle in the stim_array
+                for (let i = 0; i < trial.stim_array.length; i++) {
+                    const stim = trial.stim_array[i];
+                    
+                    // Update the currentX and currentY properties for all stimuli
+                    // This is the key part - when startX/startY is 'center', this needs to be recalculated
+                    if (stim.startX === 'center') {
+                        stim.currentX = MTS_TASK_GLOBALS.get_canvas_width_pixels() / 2;
+                    }
+                    
+                    if (stim.startY === 'center') {
+                        stim.currentY = MTS_TASK_GLOBALS.get_canvas_height_pixels() / 2;
+                    }
+                    
+                    // For the circle that uses functions instead of 'center'
+                    if (typeof stim.startX === 'function') {
+                        stim.currentX = stim.startX();
+                    }
+                    
+                    if (typeof stim.startY === 'function') {
+                        stim.currentY = stim.startY();
+                    }
+                }
+            }
+        };
   
         // Trial initiation screen
         return {
@@ -424,6 +367,13 @@ class MTS_Trial_Nodes {
             canvas_offsetY: 0,
             clear_canvas: true,
             remain_canvas: false, // If true, the canvas is not cleared at the end of the trial.
+            on_start: function() {
+                window.addEventListener('resize', resize_handler);
+            },
+            on_finish: function (data) {
+                window.removeEventListener('resize', resize_handler);
+                jsPsych.getCurrentTrial().end_trial();
+            }
         }
     }
   
@@ -454,13 +404,43 @@ class MTS_Trial_Nodes {
             } else {
                 show_end_time = stimulus_duration_msec;
             }
-            
-            return MTS_Trial_Nodes.createStimulusImageGrid(
-                stimulus_image_url, 
-                image_width_px, 
-                0, 
-                show_end_time
-            );
+
+            return {
+                obj_type: 'image',
+                startX: 'center',
+                startY: 'center',
+                origin_center: true,
+                file: stimulus_image_url,
+                image_width: image_width_px,
+                show_start_time: 0,
+                show_end_time: show_end_time
+            };
+        }
+
+        function getRandomMaskUrl(baseUrl, maxIndexExclusive) {
+            const randomIndex = Math.floor(Math.random() * maxIndexExclusive);
+            const paddedIndex = randomIndex.toString().padStart(3, '0'); // Zero-pad the integer to 3 digits
+            return `${baseUrl}${paddedIndex}.png`;
+        }
+
+        function get_mask_object(
+            mask_url_base,
+            num_unique_masks,
+            image_width_px,
+            stimulus_duration_msec,
+            pre_mask_duration_msec,
+            mask_duration_msec,
+        ) {
+            return {
+                obj_type: 'image',
+                startX: 'center',
+                startY: 'center',
+                origin_center: true,
+                file: getRandomMaskUrl(mask_url_base, num_unique_masks),
+                image_width: image_width_px,
+                show_start_time: stimulus_duration_msec+pre_mask_duration_msec,
+                show_end_time: stimulus_duration_msec+pre_mask_duration_msec+mask_duration_msec
+            };
         }
   
         function get_choice_stimuli(
@@ -581,6 +561,10 @@ class MTS_Trial_Nodes {
             let choice_image_urls = jsPsych.timelineVariable('choice_image_urls');
             let stimulus_duration_msec = jsPsych.timelineVariable('stimulus_duration_msec');
             let post_stimulus_delay_msec = jsPsych.timelineVariable('post_stimulus_delay_duration_msec');
+            let mask_url_base = jsPsych.timelineVariable('mask_url_base');
+            let num_unique_masks = jsPsych.timelineVariable('num_unique_masks')
+            let pre_mask_duration_msec = jsPsych.timelineVariable('pre_mask_duration_msec')
+            let mask_duration_msec = jsPsych.timelineVariable('mask_duration_msec')
   
             // Get stimulus object
             let stimulus_object = get_stimulus_object(
@@ -603,6 +587,19 @@ class MTS_Trial_Nodes {
                     }
                 }
             }
+
+            // Get mask object if present
+            let mask_object
+            if (mask_url_base) {
+                mask_object = get_mask_object(
+                    mask_url_base,
+                    num_unique_masks,
+                    stimulus_width_px,
+                    stimulus_duration_msec,
+                    pre_mask_duration_msec,
+                    mask_duration_msec,
+                )
+            }
   
             // Get choice objects
             //let choice_radius_px = parseInt((min_canvas_dim - 1.05*choice_width_px_default)/2.5);
@@ -613,7 +610,7 @@ class MTS_Trial_Nodes {
             if (choice_width_px > choice_width_px_default) {
                 choice_width_px = choice_width_px_default
             }
-            let choice_onset_msec = post_stimulus_delay_msec + stimulus_duration_msec;
+            let choice_onset_msec = post_stimulus_delay_msec + stimulus_duration_msec + pre_mask_duration_msec + mask_duration_msec;
             let choice_objects = get_choice_stimuli(
                 choice_image_urls,
                 choice_radius_px,
@@ -656,6 +653,11 @@ class MTS_Trial_Nodes {
                 stim_array = stim_array.concat(stimulus_object);
             } else {
                 stim_array.push(stimulus_object);
+            }
+
+            // Add mask object
+            if (mask_url_base) {
+                stim_array.push(mask_object);
             }
             
             // Add canary objects
@@ -746,7 +748,9 @@ class MTS_Trial_Nodes {
                 let post_stimulus_delay_msec = jsPsych.timelineVariable('post_stimulus_delay_duration_msec');
                 let pre_choice_lockout_delay_duration_msec = jsPsych.timelineVariable('pre_choice_lockout_delay_duration_msec');
                 let choice_duration_msec = jsPsych.timelineVariable('choice_duration_msec') || undefined;
-                let max_trial_duration = stimulus_duration_msec + post_stimulus_delay_msec + pre_choice_lockout_delay_duration_msec + choice_duration_msec || undefined;
+                let pre_mask_duration_msec = jsPsych.timelineVariable('pre_mask_duration_msec') || undefined;
+                let mask_duration_msec = jsPsych.timelineVariable('mask_duration_msec') || undefined;
+                let max_trial_duration = stimulus_duration_msec + pre_mask_duration_msec + mask_duration_msec + post_stimulus_delay_msec + pre_choice_lockout_delay_duration_msec + choice_duration_msec || undefined;
                 return max_trial_duration
             },
             canvas_width: function () {
@@ -769,8 +773,10 @@ class MTS_Trial_Nodes {
                 let stimulus_duration_msec = jsPsych.timelineVariable('stimulus_duration_msec', true);
                 let post_stimulus_delay_msec = jsPsych.timelineVariable('post_stimulus_delay_duration_msec');
                 let pre_choice_lockout_delay_duration_msec = jsPsych.timelineVariable('pre_choice_lockout_delay_duration_msec');
+                let pre_mask_duration_msec = jsPsych.timelineVariable('pre_mask_duration_msec') || undefined;
+                let mask_duration_msec = jsPsych.timelineVariable('mask_duration_msec') || undefined;
   
-                let timeout_msec = stimulus_duration_msec + post_stimulus_delay_msec + pre_choice_lockout_delay_duration_msec || 200;
+                let timeout_msec = stimulus_duration_msec + pre_mask_duration_msec + mask_duration_msec + post_stimulus_delay_msec + pre_choice_lockout_delay_duration_msec || 200;
                 timeout_msec = timeout_msec + 100;
                 setTimeout(
                     () => {
@@ -841,10 +847,13 @@ class MTS_Trial_Nodes {
                 trial_outcome['block'] = jsPsych.timelineVariable('block', true)
                 trial_outcome['stimulus_image_url'] = jsPsych.timelineVariable('stimulus_image_url', true)
                 trial_outcome['class'] = jsPsych.timelineVariable('class', true)
+                trial_outcome['split'] = jsPsych.timelineVariable('split', true)
                 trial_outcome['choice_names'] = jsPsych.timelineVariable('choice_names', true)
-                trial_outcome['choice_image_urls'] = jsPsych.timelineVariable('choice_image_urls', true)
-                trial_outcome['query_string'] = jsPsych.timelineVariable('query_string', true)
+                // trial_outcome['choice_image_urls'] = jsPsych.timelineVariable('choice_image_urls', true)
+                // trial_outcome['query_string'] = jsPsych.timelineVariable('query_string', true)
                 trial_outcome['stimulus_duration_msec'] = jsPsych.timelineVariable('stimulus_duration_msec', true)
+                trial_outcome['pre_mask_duration_msec'] = jsPsych.timelineVariable('pre_mask_duration_msec', true)
+                trial_outcome['mask_duration_msec'] = jsPsych.timelineVariable('mask_duration_msec', true)
                 trial_outcome['post_stimulus_delay_duration_msec'] = jsPsych.timelineVariable('post_stimulus_delay_duration_msec', true)
                 trial_outcome['pre_choice_lockout_delay_duration_msec'] = jsPsych.timelineVariable('pre_choice_lockout_delay_duration_msec', true)
                 trial_outcome['choice_duration_msec'] = jsPsych.timelineVariable('choice_duration_msec', true)
@@ -886,7 +895,7 @@ class MTS_Trial_Nodes {
                     }
                 }
   
-                jsPsych.getCurrentTrial().funcs.dispose();
+                jsPsych.getCurrentTrial().end_trial();
             }
         }
   
@@ -907,6 +916,7 @@ class MTS_Trial_Nodes {
                 return MTS_TASK_GLOBALS.get_canvas_height_pixels()
             },
             jsPsych.timelineVariable('intertrial_delay_duration_msec'),
+            true,
         )
     }
   }
