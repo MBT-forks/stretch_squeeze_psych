@@ -10,3 +10,15 @@ python scripts/generate_backward_masks.py --num_masks 50
 python scripts/deploy_experiment.py --experiment_name 6ani_6nonani_v1 --experiment_number 6 --aws_prefix morgan --num_trialsets 50 --delete_old_apis --num_conditions 1
 
 python scripts/get_experiment_data.py --experiment_name 6ani_6nonani_v1 --experiment_number 6 --aws_prefix morgan
+
+
+
+python scripts/deploy_experiment.py --experiment_name 6ani_6nonani_v2 --experiment_number 0 --aws_prefix morgan --num_trialsets 300 --delete_old_apis --num_conditions 1 --completion_code CDSZC2KZ --screen_out_code CF1IQX0F
+
+
+
+python psych_code/scripts/index_stretch_squeeze_db.py --dataset_path data/Selected_categories_v2 --class_alias_json data/Selected_categories_v2/category_aliases.json --csv_path dataset_dirmap.csv
+
+python psych_code/scripts/upload_images_s3.py --data_path data/Selected_categories_v2 --csv_path dataset_dirmap.csv --create_new_bucket --bucket_name morgan-stretch-squeeze-selected-categories-v2
+
+python scripts/deploy_experiment.py --experiment_name 6ani_6nonani_v2 --experiment_number 0 --aws_prefix morgan --num_trialsets 50 --delete_old_apis --num_conditions 1

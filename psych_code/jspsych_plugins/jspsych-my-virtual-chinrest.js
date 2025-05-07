@@ -132,6 +132,7 @@ const jsPsychMyVirtualChinrest = (function (jspsych) {
           this.credit_card_reps_remaining = 0;
           this.blindspot_reps_remaining = 0;
           this.ball_animation_frame_id = null;
+          this.documentMouseUpHandler = null;
       }
 
       trial(display_element, trial) {
@@ -254,11 +255,16 @@ ${trial.credit_card_instructions}
               let item_width_cur_px, item_height_cur_px;
               const scale_div = display_element.querySelector("#item");
 
-              function mouseupevent() {
+              if (this.documentMouseUpHandler) {
+                document.removeEventListener("mouseup", this.documentMouseUpHandler);
+                this.documentMouseUpHandler = null;
+              }
+
+              this.documentMouseUpHandler = function mouseupevent() {
                   dragging = false;
               }
 
-              document.addEventListener("mouseup", mouseupevent);
+              document.addEventListener("mouseup", this.documentMouseUpHandler);
 
               function mousedownevent(e) {
                   e.preventDefault();
@@ -681,6 +687,10 @@ padding: 2%;
               trial_data.rt = Math.round(performance.now() - overall_start_time);
               // remove lingering event listeners, just in case
               this.jsPsych.pluginAPI.cancelAllKeyboardResponses();
+              if (this.documentMouseUpHandler) { 
+                document.removeEventListener("mouseup", this.documentMouseUpHandler); 
+                this.documentMouseUpHandler = null; 
+              }
 
               // Clear the display
               display_element.innerHTML = "";

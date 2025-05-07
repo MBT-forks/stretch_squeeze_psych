@@ -135,7 +135,7 @@ def main():
                                             img_path = leaf_path / img_file
                                             if img_path.is_file():
                                                 relative_img_path = Path(base_dir) / unit_dir_name / leaf_dir_name / img_file
-                                                split = f"{base_dir.replace(" ", "_")}-{leaf_dir_name.replace(" ", "_")}"
+                                                split = f"{base_dir.replace(' ', '_')}-{leaf_dir_name.replace(' ', '_')}"
                                                 image_data.append({
                                                     'split': split,
                                                     'class': class_name,
