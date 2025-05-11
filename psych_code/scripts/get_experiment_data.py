@@ -114,8 +114,11 @@ def process_items(items, experiment_name, experiment_number, aws_prefix, s3_clie
             session_data_url = item['session_data_url']['S']
             session_data = fetch_json_from_s3(s3_client, session_data_url)['session_data']
             enough_data = True
-        elif 'session_data_url_auto' in item and ('was_screened_out' in item and item['was_screened_out']['BOOL'] == False):
-            print(f"Using automatically stored version of data for participant {item['worker_id']['S']}")
+        elif 'session_data_url_auto' in item:
+            if 'worker_id' in item:
+                print(f"Using automatically stored version of data for participant {item['worker_id']['S']}")
+            else:
+                print(f"Using automatically stored version of data for assignment {item['assignment_id']['S']}")
             session_data_url = item['session_data_url_auto']['S']
             session_data = fetch_json_from_s3(s3_client, session_data_url)['session_data']
             enough_data = True
